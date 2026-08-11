@@ -1,0 +1,4 @@
+packages:
+  - vendor/cheap-protocol/packages/protocol
+allowBuilds:
+  esbuild: true

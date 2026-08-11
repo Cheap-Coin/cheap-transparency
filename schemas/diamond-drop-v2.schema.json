@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cheapcoin.fun/schemas/diamond-drop-v2.schema.json",
+  "title": "CheapCoin Diamond Drop artifact v2",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "chainId",
+    "dropId",
+    "rewardAsset",
+    "assetContextHash",
+    "holderSnapshotHash",
+    "holderSnapshot",
+    "window",
+    "rewardAmount",
+    "floorTokenAmount",
+    "eligibleCount",
+    "totalWeight",
+    "allocationRoot",
+    "batchesRoot",
+    "expectedBatches",
+    "safeCreateDropCalldata",
+    "safeFinalizeDropCalldata",
+    "safeCreateDropTransaction",
+    "safeFinalizeDropTransaction",
+    "allocations",
+    "batches"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "chainId": { "const": 4663 },
+    "dropId": { "$ref": "#/$defs/bytes32" },
+    "rewardAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokenAddress", "distributorAddress", "symbol", "name", "decimals"],
+      "properties": {
+        "tokenAddress": { "$ref": "#/$defs/address" },
+        "distributorAddress": { "$ref": "#/$defs/address" },
+        "symbol": { "type": "string", "pattern": "^[A-Z0-9._-]{1,16}$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "decimals": { "type": "integer", "minimum": 0, "maximum": 36 }
+      }
+    },
+    "assetContextHash": { "$ref": "#/$defs/bytes32" },
+    "holderSnapshotHash": { "$ref": "#/$defs/bytes32" },
+    "holderSnapshot": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["address", "minimumBalance", "streak", "excluded"],
+        "properties": {
+          "address": { "$ref": "#/$defs/address" },
+          "minimumBalance": { "$ref": "#/$defs/decimal" },
+          "streak": { "type": "integer", "minimum": 0 },
+          "excluded": { "type": "boolean" }
+        }
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "startBlock", "endBlock", "rulesVersion"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "startBlock": { "$ref": "#/$defs/decimal" },
+        "endBlock": { "$ref": "#/$defs/decimal" },
+        "rulesVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rewardAmount": { "$ref": "#/$defs/decimal" },
+    "floorTokenAmount": { "$ref": "#/$defs/decimal" },
+    "eligibleCount": { "type": "integer", "minimum": 1 },
+    "totalWeight": { "$ref": "#/$defs/decimal" },
+    "allocationRoot": { "$ref": "#/$defs/bytes32" },
+    "batchesRoot": { "$ref": "#/$defs/bytes32" },
+    "expectedBatches": { "type": "integer", "minimum": 1 },
+    "safeCreateDropCalldata": { "$ref": "#/$defs/hexData" },
+    "safeFinalizeDropCalldata": { "$ref": "#/$defs/hexData" },
+    "safeCreateDropTransaction": { "$ref": "#/$defs/transaction" },
+    "safeFinalizeDropTransaction": { "$ref": "#/$defs/transaction" },
+    "allocations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["address", "minimumBalance", "streak", "multiplierBps", "weight", "amount", "leaf", "proof"],
+        "properties": {
+          "address": { "$ref": "#/$defs/address" },
+          "minimumBalance": { "$ref": "#/$defs/decimal" },
+          "streak": { "type": "integer", "minimum": 0 },
+          "multiplierBps": { "$ref": "#/$defs/decimal" },
+          "weight": { "$ref": "#/$defs/decimal" },
+          "amount": { "$ref": "#/$defs/decimal" },
+          "leaf": { "$ref": "#/$defs/bytes32" },
+          "proof": { "type": "array", "items": { "$ref": "#/$defs/bytes32" } }
+        }
+      }
+    },
+    "batches": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "recipients", "amounts", "batchHash", "leaf", "proof", "operatorCalldata", "operatorTransaction"],
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "recipients": { "type": "array", "minItems": 1, "maxItems": 200, "items": { "$ref": "#/$defs/address" } },
+          "amounts": { "type": "array", "minItems": 1, "maxItems": 200, "items": { "$ref": "#/$defs/decimal" } },
+          "batchHash": { "$ref": "#/$defs/bytes32" },
+          "leaf": { "$ref": "#/$defs/bytes32" },
+          "proof": { "type": "array", "items": { "$ref": "#/$defs/bytes32" } },
+          "operatorCalldata": { "$ref": "#/$defs/hexData" },
+          "operatorTransaction": { "$ref": "#/$defs/transaction" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+    "bytes32": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+    "decimal": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "hexData": { "type": "string", "pattern": "^0x(?:[0-9a-fA-F]{2})*$" },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["to", "value", "data"],
+      "properties": {
+        "to": { "$ref": "#/$defs/address" },
+        "value": { "const": "0" },
+        "data": { "$ref": "#/$defs/hexData" }
+      }
+    }
+  }
+}

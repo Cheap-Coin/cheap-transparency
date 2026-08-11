@@ -1,0 +1,19 @@
+{
+  "name": "cheap-transparency",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "prepare:protocol": "pnpm --filter @cheap/protocol build",
+    "validate": "pnpm prepare:protocol && node scripts/validate-transparency.mjs",
+    "check:append-only": "node scripts/check-append-only.mjs"
+  },
+  "dependencies": {
+    "@cheap/protocol": "workspace:*",
+    "viem": "2.55.11"
+  }
+}
