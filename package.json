@@ -10,10 +10,14 @@
   "scripts": {
     "prepare:protocol": "pnpm --filter @cheap/protocol build",
     "validate": "pnpm prepare:protocol && node scripts/validate-transparency.mjs",
-    "check:append-only": "node scripts/check-append-only.mjs"
+    "check:append-only": "node scripts/check-append-only.mjs",
+    "security:deps": "pnpm audit --audit-level high",
+    "check": "pnpm validate && node --check scripts/check-append-only.mjs"
   },
   "dependencies": {
     "@cheap/protocol": "workspace:*",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "viem": "2.55.11"
   }
 }

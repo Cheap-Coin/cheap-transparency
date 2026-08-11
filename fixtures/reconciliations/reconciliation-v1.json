@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "chainId": 4663,
+  "dropId": "0x228d60bc223a8aa359e831bb7dc8173f2f949cf4df35547c66d5c0ee270c0c5f",
+  "rewardAsset": "0x4EA005168D7F09a7A0Ba9D1DEf21a479950E44C2",
+  "distributorAddress": "0x00000000000000000000000000000000000000b2",
+  "artifactPath": "drops/diamond-drop-v3.json",
+  "artifactSha256": "f570e33a2cf29172c9c6904a70b9fed2edd225bb452cf7e78c43d4fe73d15d8e",
+  "createDropTxHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+  "batchTxHashes": [
+    "0x2222222222222222222222222222222222222222222222222222222222222222"
+  ],
+  "finalizeDropTxHash": "0x3333333333333333333333333333333333333333333333333333333333333333",
+  "fundedAmount": "101",
+  "distributedAmount": "101",
+  "returnedDust": "0",
+  "completedAt": "2026-08-11T00:00:00.000Z",
+  "notes": "Deterministic validator fixture only. No transaction hash represents a live execution."
+}

@@ -10,7 +10,9 @@ distributor state and verified Robinhood Chain transactions control execution;
 the files here let anyone reproduce and audit what was proposed and completed.
 The validator pins the public protocol implementation as a Git submodule and
 recomputes holder eligibility, weights, allocations, Merkle roots and proofs,
-batch contents, and Safe/operator calldata from every published holder snapshot.
+batch contents, and Safe/operator calldata from every published snapshot. V4
+also reproduces approved community-event scoring, caps, exclusions, funding
+splits, source allocations, and the final merged recipient set.
 
 ## Publication flow
 
@@ -23,6 +25,9 @@ batch contents, and Safe/operator calldata from every published holder snapshot.
 5. After execution, append a reconciliation with transaction hashes and the
    SHA-256 digest of the exact artifact.
 
-Run `pnpm install --frozen-lockfile && pnpm validate` before opening a pull
-request. Report vulnerabilities privately according to `SECURITY.md`; never
+Run `pnpm install --frozen-lockfile && pnpm check` before opening a pull
+request. The validator compiles the published JSON Schemas, verifies exact
+rules-file hashes, and reproduces the checked-in drop and reconciliation test
+vectors even before the first live record exists. Report vulnerabilities
+privately according to `SECURITY.md`; never
 publish an exploitable issue first.

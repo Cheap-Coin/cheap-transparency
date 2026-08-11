@@ -39,11 +39,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate schemas and evidence
-        run: pnpm validate
+        run: pnpm check
 
       - name: Enforce append-only evidence
         if: github.event_name == 'pull_request'
-        run: npm run check:append-only -- ${{ github.event.pull_request.base.sha }}
+        run: pnpm check:append-only -- ${{ github.event.pull_request.base.sha }}
 
       - name: Scan secrets and configuration
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
