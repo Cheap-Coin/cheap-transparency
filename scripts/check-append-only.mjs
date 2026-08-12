@@ -1,8 +1,10 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const base = process.argv[2];
-if (!base || !/^[0-9a-f]{40}$/i.test(base)) {
+const arguments_ = process.argv.slice(2);
+if (arguments_[0] === "--") arguments_.shift();
+const [base, ...unexpectedArguments] = arguments_;
+if (!base || unexpectedArguments.length > 0 || !/^[0-9a-f]{40}$/i.test(base)) {
   throw new Error("Pass the trusted 40-character base commit SHA as the first argument");
 }
 

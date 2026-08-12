@@ -12,7 +12,11 @@ The validator pins the public protocol implementation as a Git submodule and
 recomputes holder eligibility, weights, allocations, Merkle roots and proofs,
 batch contents, and Safe/operator calldata from every published snapshot. V4
 also reproduces approved community-event scoring, caps, exclusions, funding
-splits, source allocations, and the final merged recipient set.
+splits, source allocations, and the final merged recipient set. It also compiles
+the deployment schema directly from that exact protocol commit, rejects
+non-canonical deployment files, independently hashes their exact UTF-8 bytes,
+requires one active deployment at most, and verifies that every superseded
+record resolves to the active replacement.
 
 ## Publication flow
 
@@ -28,6 +32,9 @@ splits, source allocations, and the final merged recipient set.
 Run `pnpm install --frozen-lockfile && pnpm check` before opening a pull
 request. The validator compiles the published JSON Schemas, verifies exact
 rules-file hashes, and reproduces the checked-in drop and reconciliation test
-vectors even before the first live record exists. Report vulnerabilities
+vectors even before the first live record exists. Deployment tag signatures and
+live-chain bytecode are verified by the protocol release commands before the
+submodule is advanced; this ledger independently checks the pinned files and
+their canonical identity. Report vulnerabilities
 privately according to `SECURITY.md`; never
 publish an exploitable issue first.

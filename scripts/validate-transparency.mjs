@@ -8,6 +8,7 @@ import {
   allocateHolderPool,
   buildDistributionCommitment,
   mergeRewardAllocations,
+  parseDeploymentManifestJson,
   scoreCommunityContributions,
   splitHolderCommunityBudget,
 } from "@cheap/protocol";
@@ -35,6 +36,7 @@ addFormats(ajv);
 let dropSchemaValidator;
 let combinedDropSchemaValidator;
 let reconciliationSchemaValidator;
+let deploymentSchemaValidator;
 let publishedRules = new Map();
 const distributorAbi = parseAbi([
   "function createDrop(bytes32 dropId, bytes32 allocationRoot, bytes32 batchesRoot, uint256 totalAmount, uint32 expectedBatches)",
@@ -135,6 +137,118 @@ async function jsonFiles(directory, allowedFiles = new Set(["README.md"])) {
   }
   await walk(base);
   return files.sort();
+}
+
+async function validateProtocolDeployments() {
+  const deploymentsDirectory = resolve(root, "vendor", "cheap-protocol", "deployments");
+  const schemaPath = resolve(deploymentsDirectory, "deployment-manifest-v1.schema.json");
+  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
+  assert(
+    schema.$schema === "https://json-schema.org/draft/2020-12/schema",
+    "vendor/cheap-protocol/deployments/deployment-manifest-v1.schema.json: unsupported JSON Schema draft",
+  );
+  assert(
+    typeof schema.$id === "string" && schema.$id.length > 0,
+    "vendor/cheap-protocol/deployments/deployment-manifest-v1.schema.json: missing schema ID",
+  );
+  ajv.addSchema(schema);
+  deploymentSchemaValidator = ajv.getSchema(schema.$id);
+  assert(deploymentSchemaValidator, `Missing schema ${schema.$id}`);
+
+  const entries = await readdir(deploymentsDirectory, { withFileTypes: true });
+  const manifestEntries = [];
+  for (const entry of entries) {
+    const path = resolve(deploymentsDirectory, entry.name);
+    const file = relative(root, path).replaceAll("\\", "/");
+    assert(!entry.isSymbolicLink(), `${file}: symbolic links are not allowed`);
+    assert(entry.isFile(), `${file}: nested deployment directories are not allowed`);
+    if (/^[a-z0-9]+(?:-[a-z0-9]+)*\.manifest\.json$/.test(entry.name)) {
+      manifestEntries.push({ name: entry.name, path, file });
+      continue;
+    }
+    assert(
+      entry.name === "README.md" || entry.name === "deployment-manifest-v1.schema.json",
+      `${file}: unexpected deployment file`,
+    );
+  }
+
+  const manifestsById = new Map();
+  const activeDeploymentIds = [];
+  for (const entry of manifestEntries.sort((left, right) => left.name.localeCompare(right.name))) {
+    const bytes = await readFile(entry.path);
+    const source = bytes.toString("utf8");
+    let raw;
+    try {
+      raw = JSON.parse(source);
+    } catch (error) {
+      throw new Error(
+        `${entry.file}: invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    validateAgainstSchema(deploymentSchemaValidator, raw, entry.file);
+
+    let parsed;
+    try {
+      parsed = parseDeploymentManifestJson(source);
+    } catch (error) {
+      throw new Error(
+        `${entry.file}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    const independentDigest = `0x${createHash("sha256").update(bytes).digest("hex")}`;
+    assert(
+      parsed.sha256 === independentDigest,
+      `${entry.file}: protocol and independent SHA-256 digests disagree`,
+    );
+    assert(
+      parsed.manifest.publication.manifestPath === `deployments/${entry.name}`,
+      `${entry.file}: publication.manifestPath does not match its pinned protocol path`,
+    );
+    assert(
+      !manifestsById.has(parsed.manifest.deploymentId),
+      `${entry.file}: duplicate deploymentId ${parsed.manifest.deploymentId}`,
+    );
+    manifestsById.set(parsed.manifest.deploymentId, { file: entry.file, manifest: parsed.manifest });
+    if (parsed.manifest.status.state === "active") {
+      activeDeploymentIds.push(parsed.manifest.deploymentId);
+    }
+  }
+
+  assert(
+    activeDeploymentIds.length <= 1,
+    `Pinned protocol contains multiple active deployments: ${activeDeploymentIds.join(", ")}`,
+  );
+  if (manifestsById.size > 0) {
+    assert(
+      activeDeploymentIds.length === 1,
+      "Pinned protocol deployment history must contain exactly one active deployment",
+    );
+  }
+
+  for (const [deploymentId, record] of manifestsById) {
+    const visited = new Set([deploymentId]);
+    let current = record;
+    while (current.manifest.status.state === "superseded") {
+      const replacementId = current.manifest.status.supersededBy;
+      assert(
+        !visited.has(replacementId),
+        `${record.file}: supersession chain contains a cycle through ${replacementId}`,
+      );
+      visited.add(replacementId);
+      const replacement = manifestsById.get(replacementId);
+      assert(
+        replacement,
+        `${record.file}: supersededBy references missing deployment ${replacementId}`,
+      );
+      current = replacement;
+    }
+    assert(
+      current.manifest.deploymentId === activeDeploymentIds[0],
+      `${record.file}: supersession chain does not terminate at the active deployment`,
+    );
+  }
+
+  return manifestsById.size;
 }
 
 async function loadPublishedRules() {
@@ -928,6 +1042,7 @@ reconciliationSchemaValidator = ajv.getSchema(reconciliationSchemaId);
 assert(dropSchemaValidator, `Missing schema ${dropSchemaId}`);
 assert(combinedDropSchemaValidator, `Missing schema ${combinedDropSchemaId}`);
 assert(reconciliationSchemaValidator, `Missing schema ${reconciliationSchemaId}`);
+const deploymentCount = await validateProtocolDeployments();
 publishedRules = await loadPublishedRules();
 
 let dropFixtureCount = 0;
@@ -970,5 +1085,5 @@ for (const path of await jsonFiles("reconciliations")) {
 }
 
 console.log(
-  `Reproduced and validated ${schemaCount} schemas, ${dropFixtureCount} drop fixtures, ${reconciliationFixtureCount} reconciliation fixtures, ${dropCount} drops, and ${reconciliationCount} reconciliations.`,
+  `Reproduced and validated ${schemaCount} evidence schemas, the pinned deployment schema, ${deploymentCount} canonical deployment manifests, ${dropFixtureCount} drop fixtures, ${reconciliationFixtureCount} reconciliation fixtures, ${dropCount} drops, and ${reconciliationCount} reconciliations.`,
 );
