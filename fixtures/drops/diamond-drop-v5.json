@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 5,
+  "chainId": 4663,
+  "dropId": "0x6666666666666666666666666666666666666666666666666666666666666666",
+  "rewardAsset": {
+    "tokenAddress": "0x4EA005168D7F09a7A0Ba9D1DEf21a479950E44C2",
+    "distributorAddress": "0x00000000000000000000000000000000000000D4",
+    "symbol": "COST",
+    "name": "Costco Robinhood Stock Token",
+    "decimals": 18
+  },
+  "assetContextHash": "0x3251c236ffb82c600419591e83364f6aee5698873a9717c6e1d7ccb43b148839",
+  "window": {
+    "sequence": 2,
+    "startBlock": "201",
+    "endBlock": "300",
+    "rulesVersion": "1.0.0",
+    "rulesPath": "rules/RULES-v1.md",
+    "rulesSha256": "b80cc1e93fac35292aa1bce7beb537e4cd5f181260d3f35d01889a4dfbc797b9"
+  },
+  "rewardAmount": "1000",
+  "holderPool": {
+    "floorTokenAmount": "100",
+    "eligibleCount": 1,
+    "totalWeight": "100",
+    "snapshotHash": "0x26552bb98ee064d250323f96c114e471e1c524d991d9aa94654bf8517dde05eb",
+    "snapshot": [
+      {
+        "address": "0x00000000000000000000000000000000000000A1",
+        "minimumBalance": "100",
+        "streak": 1,
+        "excluded": false
+      },
+      {
+        "address": "0x00000000000000000000000000000000000000b2",
+        "minimumBalance": "99",
+        "streak": 1,
+        "excluded": false
+      },
+      {
+        "address": "0x00000000000000000000000000000000000000C3",
+        "minimumBalance": "100",
+        "streak": 1,
+        "excluded": false
+      }
+    ]
+  },
+  "participationGate": {
+    "minimumPoints": "5",
+    "minimumAcceptedEvents": 1,
+    "score": {
+      "schemaVersion": 1,
+      "round": {
+        "id": "00000000-0000-4000-8000-000000000202",
+        "sequence": 2,
+        "startTime": 1800000000,
+        "endTime": 1800086400,
+        "rulesVersion": "1-test-vector",
+        "rulesPath": "rules/COMMUNITY-RULES-v1-test-vector.md",
+        "rulesSha256": "1aba704e605b997de11a29d4c8d5c8b5ce0ae75f5f87a88605c93f6d24a317e6"
+      },
+      "rules": [
+        {
+          "action": "x_original_post",
+          "points": "5",
+          "perUtcDay": 1,
+          "perRound": 2
+        }
+      ],
+      "approvedEvents": [
+        {
+          "eventCommitment": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "address": "0x00000000000000000000000000000000000000A1",
+          "action": "x_original_post",
+          "occurredAt": 1800000100
+        },
+        {
+          "eventCommitment": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "address": "0x00000000000000000000000000000000000000b2",
+          "action": "x_original_post",
+          "occurredAt": 1800000200
+        }
+      ],
+      "excludedAddresses": [],
+      "contributors": [
+        {
+          "address": "0x00000000000000000000000000000000000000A1",
+          "points": "5",
+          "acceptedEvents": 1
+        },
+        {
+          "address": "0x00000000000000000000000000000000000000b2",
+          "points": "5",
+          "acceptedEvents": 1
+        }
+      ],
+      "acceptedEvents": [
+        {
+          "eventCommitment": "0x4444444444444444444444444444444444444444444444444444444444444444",
+          "address": "0x00000000000000000000000000000000000000A1",
+          "action": "x_original_post",
+          "occurredAt": 1800000100,
+          "points": "5"
+        },
+        {
+          "eventCommitment": "0x5555555555555555555555555555555555555555555555555555555555555555",
+          "address": "0x00000000000000000000000000000000000000b2",
+          "action": "x_original_post",
+          "occurredAt": 1800000200,
+          "points": "5"
+        }
+      ],
+      "rejectedEvents": [],
+      "totalPoints": "10",
+      "inputCommitment": "0xa7489d0b8aa45ea12617b837b09e3cb817eb66a9e2b09424d651730580bbae6d",
+      "outputCommitment": "0x022e2aec6db14e660ac10fafc6d3f348713832cd822669ac84fd332bab89dfd5"
+    },
+    "participationQualifiedCount": 2,
+    "gateHash": "0x8d8978728832bdd621d2b3bfbc2ef7a7d4ef65d226a4e7ec04ab3114d4ceddc2",
+    "decisions": [
+      {
+        "address": "0x00000000000000000000000000000000000000A1",
+        "points": "5",
+        "acceptedEvents": 1,
+        "holderExcluded": false,
+        "pointsQualified": true,
+        "eventsQualified": true,
+        "participationQualified": true
+      },
+      {
+        "address": "0x00000000000000000000000000000000000000b2",
+        "points": "5",
+        "acceptedEvents": 1,
+        "holderExcluded": false,
+        "pointsQualified": true,
+        "eventsQualified": true,
+        "participationQualified": true
+      },
+      {
+        "address": "0x00000000000000000000000000000000000000C3",
+        "points": "0",
+        "acceptedEvents": 0,
+        "holderExcluded": false,
+        "pointsQualified": false,
+        "eventsQualified": false,
+        "participationQualified": false
+      }
+    ]
+  },
+  "recipientCount": 1,
+  "allocationRoot": "0x446aacde39ee9c5120d6a1fb4f7e7c727bb9bc3f5b8531ea78bfc59916941c14",
+  "batchesRoot": "0xe838d06b4cd4f8a6306dbd37276b2ab0eec3c16727db418caa1d0c28a11fe3c8",
+  "expectedBatches": 1,
+  "safeCreateDropCalldata": "0x183ec1466666666666666666666666666666666666666666666666666666666666666666446aacde39ee9c5120d6a1fb4f7e7c727bb9bc3f5b8531ea78bfc59916941c14e838d06b4cd4f8a6306dbd37276b2ab0eec3c16727db418caa1d0c28a11fe3c800000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000001",
+  "safeFinalizeDropCalldata": "0xd1ffe5906666666666666666666666666666666666666666666666666666666666666666",
+  "safeCreateDropTransaction": {
+    "to": "0x00000000000000000000000000000000000000D4",
+    "value": "0",
+    "data": "0x183ec1466666666666666666666666666666666666666666666666666666666666666666446aacde39ee9c5120d6a1fb4f7e7c727bb9bc3f5b8531ea78bfc59916941c14e838d06b4cd4f8a6306dbd37276b2ab0eec3c16727db418caa1d0c28a11fe3c800000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000001"
+  },
+  "safeFinalizeDropTransaction": {
+    "to": "0x00000000000000000000000000000000000000D4",
+    "value": "0",
+    "data": "0xd1ffe5906666666666666666666666666666666666666666666666666666666666666666"
+  },
+  "allocations": [
+    {
+      "address": "0x00000000000000000000000000000000000000A1",
+      "minimumBalance": "100",
+      "streak": 1,
+      "multiplierBps": "10000",
+      "weight": "100",
+      "participationPoints": "5",
+      "acceptedEvents": 1,
+      "amount": "1000",
+      "leaf": "0x446aacde39ee9c5120d6a1fb4f7e7c727bb9bc3f5b8531ea78bfc59916941c14",
+      "proof": []
+    }
+  ],
+  "batches": [
+    {
+      "index": 0,
+      "recipients": [
+        "0x00000000000000000000000000000000000000A1"
+      ],
+      "amounts": [
+        "1000"
+      ],
+      "batchHash": "0xe51e0d630854f427bf965c182396568ce71aa386eaf1d863422d341c5ad36cad",
+      "leaf": "0xe838d06b4cd4f8a6306dbd37276b2ab0eec3c16727db418caa1d0c28a11fe3c8",
+      "proof": [],
+      "operatorCalldata": "0x01baf7276666666666666666666666666666666666666666666666666666666666666666000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a1000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000",
+      "operatorTransaction": {
+        "to": "0x00000000000000000000000000000000000000D4",
+        "value": "0",
+        "data": "0x01baf7276666666666666666666666666666666666666666666666666666666666666666000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a1000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  ]
+}

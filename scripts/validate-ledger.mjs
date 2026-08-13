@@ -6,10 +6,15 @@ import addFormats from "ajv-formats";
 import {
   allocateCommunityPool,
   allocateHolderPool,
+  applyParticipationGate,
   buildDistributionCommitment,
+  buildSurpriseCandidateSet,
+  deriveDiamondWindow,
+  deriveSurpriseSeed,
   mergeRewardAllocations,
   parseDeploymentManifestJson,
   scoreCommunityContributions,
+  selectSurpriseDrop,
   splitHolderCommunityBudget,
 } from "@cheap/protocol";
 import {
@@ -30,11 +35,17 @@ const hexDataPattern = /^0x(?:[0-9a-fA-F]{2})*$/;
 const sha256Pattern = /^[0-9a-f]{64}$/;
 const dropSchemaId = "https://cheapcoin.fun/schemas/diamond-drop-v3.schema.json";
 const combinedDropSchemaId = "https://cheapcoin.fun/schemas/diamond-drop-v4.schema.json";
+const participationDropSchemaId = "https://cheapcoin.fun/schemas/diamond-drop-v5.schema.json";
+const strictDiamondDropSchemaId = "https://cheapcoin.fun/schemas/diamond-drop-v6.schema.json";
+const surpriseDropSchemaId = "https://cheapcoin.fun/schemas/surprise-drop-v7.schema.json";
 const reconciliationSchemaId = "https://cheapcoin.fun/schemas/reconciliation-v1.schema.json";
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 addFormats(ajv);
 let dropSchemaValidator;
 let combinedDropSchemaValidator;
+let participationDropSchemaValidator;
+let strictDiamondDropSchemaValidator;
+let surpriseDropSchemaValidator;
 let reconciliationSchemaValidator;
 let deploymentSchemaValidator;
 let publishedRules = new Map();
@@ -49,6 +60,16 @@ const assetContextParameters = parseAbiParameters(
 const snapshotParameters = parseAbiParameters(
   "bytes32 dropId, address[] holders, uint256[] minimumBalances, uint256[] streaks, bool[] exclusions",
 );
+const gateParameters = parseAbiParameters(
+  "bytes32 dropId, bytes32 scoreOutput, uint256 minimumPoints, uint256 minimumEvents, address[] holders, uint256[] points, uint256[] events, bool[] qualified",
+);
+const rewardableActions = new Set([
+  "x_original_post",
+  "x_educational_thread",
+  "x_space_host",
+  "x_space_speaker",
+  "tiktok_original_video",
+]);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -616,6 +637,563 @@ function jsonCommitment(value) {
   return keccak256(stringToHex(JSON.stringify(value)));
 }
 
+function reproduceCommunityScore(score, at) {
+  assert(score.round.endTime >= score.round.startTime, at("participation round timestamps are invalid"));
+  assert(
+    publishedRules.get(score.round.rulesPath) === score.round.rulesSha256,
+    at("participation rules hash does not match published bytes"),
+  );
+  const scoringRules = score.rules.map((rule, index) => {
+    if (index > 0) {
+      assert(
+        score.rules[index - 1].action.localeCompare(rule.action) < 0,
+        at("participation rules must be action-sorted"),
+      );
+    }
+    assert(rewardableActions.has(rule.action), at(`action ${rule.action} is not rewardable`));
+    assert(rule.perUtcDay <= rule.perRound, at(`rule ${rule.action} has invalid caps`));
+    return {
+      action: rule.action,
+      points: decimal(rule.points, at(`rule ${rule.action}.points`)),
+      perUtcDay: rule.perUtcDay,
+      perRound: rule.perRound,
+    };
+  });
+  const approvedEvents = score.approvedEvents.map((event, index) => {
+    bytes32(event.eventCommitment, at(`approvedEvents[${index}].eventCommitment`));
+    assert(
+      event.eventCommitment === event.eventCommitment.toLowerCase(),
+      at(`approvedEvents[${index}].eventCommitment must be lowercase`),
+    );
+    address(event.address, at(`approvedEvents[${index}].address`));
+    if (index > 0) {
+      const previous = score.approvedEvents[index - 1];
+      assert(
+        previous.occurredAt < event.occurredAt ||
+          (previous.occurredAt === event.occurredAt &&
+            previous.eventCommitment.localeCompare(event.eventCommitment) < 0),
+        at("approvedEvents must be time-and-commitment sorted"),
+      );
+    }
+    return event;
+  });
+  const excluded = new Set();
+  score.excludedAddresses.forEach((candidate, index) => {
+    address(candidate, at(`excludedAddresses[${index}]`));
+    const key = candidate.toLowerCase();
+    assert(!excluded.has(key), at(`excludedAddresses[${index}] is duplicated`));
+    if (index > 0) {
+      assert(
+        score.excludedAddresses[index - 1].toLowerCase().localeCompare(key) < 0,
+        at("excludedAddresses must be address-sorted"),
+      );
+    }
+    excluded.add(key);
+  });
+  const recomputed = scoreCommunityContributions({
+    startTime: score.round.startTime,
+    endTime: score.round.endTime,
+    rules: scoringRules,
+    events: approvedEvents,
+    excludedAddresses: excluded,
+  });
+  assert(recomputed.totalPoints > 0n, at("score has no accepted points"));
+  const committedInput = {
+    round: {
+      id: score.round.id,
+      sequence: score.round.sequence,
+      startTime: score.round.startTime,
+      endTime: score.round.endTime,
+      rulesVersion: score.round.rulesVersion,
+      rulesPath: score.round.rulesPath,
+      rulesSha256: score.round.rulesSha256,
+    },
+    rules: scoringRules.map((rule) => ({ ...rule, points: rule.points.toString() })),
+    approvedEvents,
+    excludedAddresses: score.excludedAddresses,
+  };
+  const inputCommitment = jsonCommitment(committedInput);
+  sameHex(score.inputCommitment, inputCommitment, at("score.inputCommitment"));
+  const result = {
+    contributors: recomputed.contributors.map((contributor) => ({
+      address: contributor.address,
+      points: contributor.points.toString(),
+      acceptedEvents: contributor.acceptedEvents,
+    })),
+    acceptedEvents: recomputed.acceptedEvents.map((event) => ({
+      eventCommitment: event.eventCommitment,
+      address: event.address,
+      action: event.action,
+      occurredAt: event.occurredAt,
+      points: event.points.toString(),
+    })),
+    rejectedEvents: recomputed.rejectedEvents.map((event) => ({
+      eventCommitment: event.eventCommitment,
+      address: event.address,
+      action: event.action,
+      occurredAt: event.occurredAt,
+      reason: event.reason,
+    })),
+    totalPoints: recomputed.totalPoints.toString(),
+  };
+  sameJson(score.contributors, result.contributors, at("score.contributors"));
+  sameJson(score.acceptedEvents, result.acceptedEvents, at("score.acceptedEvents"));
+  sameJson(score.rejectedEvents, result.rejectedEvents, at("score.rejectedEvents"));
+  assert(score.totalPoints === result.totalPoints, at("score.totalPoints does not reproduce"));
+  const outputCommitment = jsonCommitment({ inputCommitment, result });
+  sameHex(score.outputCommitment, outputCommitment, at("score.outputCommitment"));
+  return { recomputed, inputCommitment, outputCommitment };
+}
+
+function validateParticipationDrop(drop, file) {
+  const at = (field) => `${file}: ${field}`;
+  validateAgainstSchema(participationDropSchemaValidator, drop, file);
+  assert(drop.schemaVersion === 5, at("schemaVersion must be 5"));
+  assert(drop.chainId === 4663, at("chainId must be Robinhood Chain 4663"));
+  bytes32(drop.dropId, at("dropId"));
+  bytes32(drop.assetContextHash, at("assetContextHash"));
+  bytes32(drop.allocationRoot, at("allocationRoot"));
+  bytes32(drop.batchesRoot, at("batchesRoot"));
+
+  const asset = drop.rewardAsset;
+  address(asset.tokenAddress, at("rewardAsset.tokenAddress"));
+  address(asset.distributorAddress, at("rewardAsset.distributorAddress"));
+  sameHex(
+    drop.assetContextHash,
+    keccak256(encodeAbiParameters(assetContextParameters, [
+      4663n,
+      asset.tokenAddress,
+      asset.distributorAddress,
+      drop.dropId,
+    ])),
+    at("assetContextHash"),
+  );
+
+  const rewardAmount = decimal(drop.rewardAmount, at("rewardAmount"));
+  assert(rewardAmount > 0n, at("rewardAmount must be positive"));
+  assert(decimal(drop.window.endBlock, at("window.endBlock")) >=
+    decimal(drop.window.startBlock, at("window.startBlock")), at("holder window is invalid"));
+  assert(
+    publishedRules.get(drop.window.rulesPath) === drop.window.rulesSha256,
+    at("window rules hash does not match published bytes"),
+  );
+
+  const snapshotInputs = drop.holderPool.snapshot.map((holder, index) => {
+    const prefix = at(`holderPool.snapshot[${index}]`);
+    address(holder.address, `${prefix}.address`);
+    if (index > 0) {
+      assert(
+        drop.holderPool.snapshot[index - 1].address.toLowerCase()
+          .localeCompare(holder.address.toLowerCase()) < 0,
+        at("holder snapshot must be address-sorted"),
+      );
+    }
+    return {
+      address: holder.address,
+      minimumBalance: decimal(holder.minimumBalance, `${prefix}.minimumBalance`),
+      streak: holder.streak,
+      excluded: holder.excluded,
+    };
+  });
+  sameHex(
+    drop.holderPool.snapshotHash,
+    keccak256(encodeAbiParameters(snapshotParameters, [
+      drop.dropId,
+      snapshotInputs.map((holder) => holder.address),
+      snapshotInputs.map((holder) => holder.minimumBalance),
+      snapshotInputs.map((holder) => BigInt(holder.streak)),
+      snapshotInputs.map((holder) => holder.excluded),
+    ])),
+    at("holderPool.snapshotHash"),
+  );
+
+  const { recomputed: score } = reproduceCommunityScore(
+    drop.participationGate.score,
+    (field) => at(`participationGate.${field}`),
+  );
+  const minimumPoints = decimal(
+    drop.participationGate.minimumPoints,
+    at("participationGate.minimumPoints"),
+  );
+  assert(minimumPoints > 0n, at("participation minimum must be positive"));
+  const minimumAcceptedEvents = drop.participationGate.minimumAcceptedEvents;
+  assert(
+    Number.isSafeInteger(minimumAcceptedEvents) && minimumAcceptedEvents > 0,
+    at("participation event minimum must be positive"),
+  );
+  const gated = applyParticipationGate(
+    snapshotInputs,
+    score.contributors,
+    { minimumPoints, minimumAcceptedEvents },
+  );
+  assert(
+    gated.participationQualifiedCount === drop.participationGate.participationQualifiedCount,
+    at("participationQualifiedCount does not reproduce"),
+  );
+  const decisions = gated.decisions.map((decision) => ({
+    address: decision.address,
+    points: decision.points.toString(),
+    acceptedEvents: decision.acceptedEvents,
+    holderExcluded: decision.holderExcluded,
+    pointsQualified: decision.pointsQualified,
+    eventsQualified: decision.eventsQualified,
+    participationQualified: decision.participationQualified,
+  }));
+  sameJson(drop.participationGate.decisions, decisions, at("participationGate.decisions"));
+  sameHex(
+    drop.participationGate.gateHash,
+    keccak256(encodeAbiParameters(gateParameters, [
+      drop.dropId,
+      drop.participationGate.score.outputCommitment,
+      minimumPoints,
+      BigInt(minimumAcceptedEvents),
+      decisions.map((decision) => decision.address),
+      decisions.map((decision) => BigInt(decision.points)),
+      decisions.map((decision) => BigInt(decision.acceptedEvents)),
+      decisions.map((decision) => decision.participationQualified),
+    ])),
+    at("participationGate.gateHash"),
+  );
+
+  const allocation = allocateHolderPool(
+    rewardAmount,
+    decimal(drop.holderPool.floorTokenAmount, at("holderPool.floorTokenAmount")),
+    gated.holders,
+  );
+  assert(allocation.undistributed === 0n, at("funded reward is not fully allocated"));
+  assert(allocation.eligibleCount === drop.holderPool.eligibleCount, at("eligibleCount does not reproduce"));
+  assert(allocation.totalWeight === decimal(drop.holderPool.totalWeight, at("holderPool.totalWeight")), at("totalWeight does not reproduce"));
+  const commitment = buildDistributionCommitment(
+    drop.dropId,
+    allocation.allocations.map(({ address: recipient, amount }) => ({ address: recipient, amount })),
+  );
+  sameHex(drop.allocationRoot, commitment.allocationRoot, at("allocationRoot"));
+  sameHex(drop.batchesRoot, commitment.batchesRoot, at("batchesRoot"));
+  assert(drop.recipientCount === allocation.allocations.length, at("recipientCount does not reproduce"));
+  const decisionByAddress = new Map(gated.decisions.map((decision) => [decision.address.toLowerCase(), decision]));
+  sameJson(
+    drop.allocations,
+    allocation.allocations.map((holder, index) => {
+      const decision = decisionByAddress.get(holder.address.toLowerCase());
+      assert(decision, at(`allocation ${holder.address} has no gate decision`));
+      return {
+        address: holder.address,
+        minimumBalance: holder.minimumBalance.toString(),
+        streak: holder.streak,
+        multiplierBps: holder.multiplierBps.toString(),
+        weight: holder.weight.toString(),
+        participationPoints: decision.points.toString(),
+        acceptedEvents: decision.acceptedEvents,
+        amount: holder.amount.toString(),
+        leaf: commitment.entries[index].leaf,
+        proof: commitment.entries[index].proof,
+      };
+    }),
+    at("allocations"),
+  );
+
+  assert(
+    drop.expectedBatches === commitment.batches.length &&
+      drop.batches.length === commitment.batches.length,
+    at("expectedBatches does not reproduce"),
+  );
+  for (const [index, expected] of commitment.batches.entries()) {
+    const operatorCalldata = encodeFunctionData({
+      abi: distributorAbi,
+      functionName: "distributeBatch",
+      args: [drop.dropId, BigInt(index), expected.recipients, expected.amounts, expected.proof],
+    });
+    sameJson(drop.batches[index], {
+      index,
+      recipients: expected.recipients,
+      amounts: expected.amounts.map(String),
+      batchHash: expected.batchHash,
+      leaf: expected.leaf,
+      proof: expected.proof,
+      operatorCalldata,
+      operatorTransaction: { to: asset.distributorAddress, value: "0", data: operatorCalldata },
+    }, at(`batches[${index}]`));
+  }
+  const createDropCalldata = encodeFunctionData({
+    abi: distributorAbi,
+    functionName: "createDrop",
+    args: [drop.dropId, commitment.allocationRoot, commitment.batchesRoot, rewardAmount, commitment.batches.length],
+  });
+  const finalizeDropCalldata = encodeFunctionData({
+    abi: distributorAbi,
+    functionName: "finalizeDrop",
+    args: [drop.dropId],
+  });
+  assert(drop.safeCreateDropCalldata.toLowerCase() === createDropCalldata.toLowerCase(), at("safeCreateDropCalldata does not reproduce"));
+  assert(drop.safeFinalizeDropCalldata.toLowerCase() === finalizeDropCalldata.toLowerCase(), at("safeFinalizeDropCalldata does not reproduce"));
+  transaction(drop.safeCreateDropTransaction, at("safeCreateDropTransaction"), asset.distributorAddress, createDropCalldata);
+  transaction(drop.safeFinalizeDropTransaction, at("safeFinalizeDropTransaction"), asset.distributorAddress, finalizeDropCalldata);
+}
+
+function validateStrictDiamondDrop(drop, file) {
+  const at = (field) => `${file}: ${field}`;
+  validateAgainstSchema(strictDiamondDropSchemaValidator, drop, file);
+  assert(drop.schemaVersion === 6 && drop.program === "cost_diamond_drop", at("program is invalid"));
+  assert(drop.chainId === 4663, at("chainId must be Robinhood Chain 4663"));
+  assert(publishedRules.get(drop.window.rulesPath) === drop.window.rulesSha256, at("rules hash does not match published bytes"));
+  const expectedAssetContextHash = keccak256(encodeAbiParameters(assetContextParameters, [
+    4663n,
+    drop.rewardAsset.tokenAddress,
+    drop.rewardAsset.distributorAddress,
+    drop.dropId,
+  ]));
+  sameHex(drop.assetContextHash, expectedAssetContextHash, at("assetContextHash"));
+
+  const selected = deriveDiamondWindow({
+    selectionId: drop.window.selection.selectionId,
+    startBlock: decimal(drop.window.startBlock, at("window.startBlock")),
+    minimumDurationBlocks: decimal(drop.window.selection.minimumDurationBlocks, at("window.selection.minimumDurationBlocks")),
+    maximumDurationBlocks: decimal(drop.window.selection.maximumDurationBlocks, at("window.selection.maximumDurationBlocks")),
+    entropyBlockNumber: decimal(drop.window.selection.entropyBlockNumber, at("window.selection.entropyBlockNumber")),
+    entropyBlockHash: drop.window.selection.entropyBlockHash,
+  });
+  const expectedSelection = {
+    selectionId: selected.selectionId,
+    minimumDurationBlocks: selected.minimumDurationBlocks.toString(),
+    maximumDurationBlocks: selected.maximumDurationBlocks.toString(),
+    minimumEndBlock: selected.minimumEndBlock.toString(),
+    maximumEndBlock: selected.maximumEndBlock.toString(),
+    selectedDurationBlocks: selected.selectedDurationBlocks.toString(),
+    entropyBlockNumber: selected.entropyBlockNumber.toString(),
+    entropyBlockHash: selected.entropyBlockHash,
+    randomWord: selected.randomWord,
+    rejectionCount: selected.rejectionCount,
+  };
+  sameJson(drop.window.selection, expectedSelection, at("window.selection"));
+  assert(drop.window.endBlock === selected.endBlock.toString(), at("window.endBlock does not reproduce"));
+
+  const holders = drop.holderSnapshot.map((holder) => ({
+    address: holder.address,
+    minimumBalance: decimal(holder.minimumBalance, at("holder minimumBalance")),
+    streak: holder.streak,
+    outboundTransfer: holder.outboundTransfer,
+    excluded: holder.excluded,
+  }));
+  const snapshotHash = keccak256(encodeAbiParameters(
+    parseAbiParameters("bytes32 dropId, address[] holders, uint256[] minimumBalances, uint256[] streaks, bool[] outboundTransfers, bool[] exclusions"),
+    [drop.dropId, holders.map(({ address: holder }) => holder), holders.map(({ minimumBalance }) => minimumBalance),
+      holders.map(({ streak }) => BigInt(streak)), holders.map(({ outboundTransfer }) => outboundTransfer),
+      holders.map(({ excluded }) => excluded)],
+  ));
+  sameHex(drop.holderSnapshotHash, snapshotHash, at("holderSnapshotHash"));
+  const allocation = allocateHolderPool(
+    decimal(drop.rewardAmount, at("rewardAmount")),
+    decimal(drop.floorTokenAmount, at("floorTokenAmount")),
+    holders,
+  );
+  assert(allocation.undistributed === 0n, at("budget is not fully allocated"));
+  assert(allocation.eligibleCount === drop.eligibleCount, at("eligibleCount does not reproduce"));
+  assert(allocation.totalWeight === decimal(drop.totalWeight, at("totalWeight")), at("totalWeight does not reproduce"));
+  const commitment = buildDistributionCommitment(
+    drop.dropId,
+    allocation.allocations.map(({ address: recipient, amount }) => ({ address: recipient, amount })),
+  );
+  sameHex(drop.allocationRoot, commitment.allocationRoot, at("allocationRoot"));
+  sameHex(drop.batchesRoot, commitment.batchesRoot, at("batchesRoot"));
+  sameJson(drop.allocations, allocation.allocations.map((holder, index) => ({
+    address: holder.address,
+    minimumBalance: holder.minimumBalance.toString(),
+    streak: holder.streak,
+    outboundTransfer: Boolean(holder.outboundTransfer),
+    multiplierBps: holder.multiplierBps.toString(),
+    weight: holder.weight.toString(),
+    amount: holder.amount.toString(),
+    leaf: commitment.entries[index].leaf,
+    proof: commitment.entries[index].proof,
+  })), at("allocations"));
+  validateCommittedTransactions(drop, commitment, at);
+}
+
+function validateSurpriseDrop(drop, file) {
+  const at = (field) => `${file}: ${field}`;
+  validateAgainstSchema(surpriseDropSchemaValidator, drop, file);
+  assert(drop.schemaVersion === 7 && drop.program === "cheap_surprise_drop", at("program is invalid"));
+  assert(drop.chainId === 4663, at("chainId must be Robinhood Chain 4663"));
+  assert(drop.rewardAsset.symbol === "CHEAP", at("reward asset must be CHEAP"));
+  assert(publishedRules.get(drop.round.holdingRulesPath) === drop.round.holdingRulesSha256, at("holding rules hash does not match"));
+  assert(publishedRules.get(drop.round.rulesPath) === drop.round.rulesSha256, at("community rules hash does not match"));
+  assert(BigInt(drop.entropy.blockNumber) > BigInt(drop.round.endBlock), at("entropy must follow candidate freeze"));
+
+  const score = drop.score;
+  assert(score.round.id === drop.round.id && score.round.sequence === drop.round.sequence, at("score round identity does not match candidate round"));
+  assert(score.round.rulesVersion === drop.round.rulesVersion, at("score rules version does not match candidate round"));
+  assert(score.round.rulesPath === drop.round.rulesPath, at("score rules path does not match candidate round"));
+  assert(score.round.rulesSha256 === drop.round.rulesSha256, at("score rules hash does not match candidate round"));
+  const scoringRules = score.rules.map((rule, index) => {
+    if (index > 0) {
+      assert(score.rules[index - 1].action.localeCompare(rule.action) < 0, at("score rules must be action-sorted"));
+    }
+    assert(rewardableActions.has(rule.action), at(`score rule ${rule.action} is not rewardable`));
+    assert(rule.perUtcDay <= rule.perRound, at(`score rule ${rule.action} has invalid caps`));
+    return {
+      action: rule.action,
+      points: decimal(rule.points, at(`score rule ${rule.action}.points`)),
+      perUtcDay: rule.perUtcDay,
+      perRound: rule.perRound,
+    };
+  });
+  const approvedEvents = score.approvedEvents.map((event, index) => {
+    bytes32(event.eventCommitment, at(`score.approvedEvents[${index}].eventCommitment`));
+    address(event.address, at(`score.approvedEvents[${index}].address`));
+    if (index > 0) {
+      const previous = score.approvedEvents[index - 1];
+      assert(
+        previous.occurredAt < event.occurredAt ||
+          (previous.occurredAt === event.occurredAt && previous.eventCommitment.localeCompare(event.eventCommitment) < 0),
+        at("score approved events must be time-and-commitment sorted"),
+      );
+    }
+    return event;
+  });
+  const excludedAddresses = new Set();
+  score.excludedAddresses.forEach((candidate, index) => {
+    address(candidate, at(`score.excludedAddresses[${index}]`));
+    const key = candidate.toLowerCase();
+    assert(!excludedAddresses.has(key), at(`score.excludedAddresses[${index}] is duplicated`));
+    if (index > 0) {
+      assert(score.excludedAddresses[index - 1].toLowerCase().localeCompare(key) < 0, at("score exclusions must be address-sorted"));
+    }
+    excludedAddresses.add(key);
+  });
+  const recomputedScore = scoreCommunityContributions({
+    startTime: score.round.startTime,
+    endTime: score.round.endTime,
+    rules: scoringRules,
+    events: approvedEvents,
+    excludedAddresses,
+  });
+  const committedInput = {
+    round: score.round,
+    rules: scoringRules.map((rule) => ({ ...rule, points: rule.points.toString() })),
+    approvedEvents,
+    excludedAddresses: score.excludedAddresses,
+  };
+  const inputCommitment = jsonCommitment(committedInput);
+  sameHex(score.inputCommitment, inputCommitment, at("score.inputCommitment"));
+  const scoringResult = {
+    contributors: recomputedScore.contributors.map((contributor) => ({
+      address: contributor.address,
+      points: contributor.points.toString(),
+      acceptedEvents: contributor.acceptedEvents,
+    })),
+    acceptedEvents: recomputedScore.acceptedEvents.map((event) => ({
+      eventCommitment: event.eventCommitment,
+      address: event.address,
+      action: event.action,
+      occurredAt: event.occurredAt,
+      points: event.points.toString(),
+    })),
+    rejectedEvents: recomputedScore.rejectedEvents.map((event) => ({
+      eventCommitment: event.eventCommitment,
+      address: event.address,
+      action: event.action,
+      occurredAt: event.occurredAt,
+      reason: event.reason,
+    })),
+    totalPoints: recomputedScore.totalPoints.toString(),
+  };
+  sameJson(score.contributors, scoringResult.contributors, at("score.contributors"));
+  sameJson(score.acceptedEvents, scoringResult.acceptedEvents, at("score.acceptedEvents"));
+  sameJson(score.rejectedEvents, scoringResult.rejectedEvents, at("score.rejectedEvents"));
+  assert(score.totalPoints === scoringResult.totalPoints, at("score.totalPoints does not reproduce"));
+  sameHex(score.outputCommitment, jsonCommitment({ inputCommitment, result: scoringResult }), at("score.outputCommitment"));
+
+  const config = {
+    roundId: drop.dropId,
+    rewardAmount: decimal(drop.rewardAmount, at("rewardAmount")),
+    winnerCount: drop.winnerCount,
+    minimumPoints: decimal(drop.selectionRules.minimumPoints, at("minimumPoints")),
+    minimumAcceptedEvents: drop.selectionRules.minimumAcceptedEvents,
+    floorTokenAmount: decimal(drop.selectionRules.floorTokenAmount, at("floorTokenAmount")),
+    holdingUnit: decimal(drop.selectionRules.holdingUnit, at("holdingUnit")),
+    maximumHoldingUnits: decimal(drop.selectionRules.maximumHoldingUnits, at("maximumHoldingUnits")),
+    maximumActivityPoints: decimal(drop.selectionRules.maximumActivityPoints, at("maximumActivityPoints")),
+  };
+  const candidates = drop.candidates.map((candidate) => ({
+    address: candidate.address,
+    points: decimal(candidate.points, at("candidate.points")),
+    acceptedEvents: candidate.acceptedEvents,
+    minimumBalance: decimal(candidate.minimumBalance, at("candidate.minimumBalance")),
+    excluded: candidate.excluded,
+  }));
+  assert(candidates.length === recomputedScore.contributors.length, at("candidate set must include every scored contributor"));
+  const contributorByAddress = new Map(recomputedScore.contributors.map((contributor) => [contributor.address.toLowerCase(), contributor]));
+  candidates.forEach((candidate) => {
+    const contributor = contributorByAddress.get(candidate.address.toLowerCase());
+    assert(contributor, at(`candidate ${candidate.address} is absent from the committed score`));
+    assert(candidate.points === contributor.points, at(`candidate ${candidate.address} points do not match score`));
+    assert(candidate.acceptedEvents === contributor.acceptedEvents, at(`candidate ${candidate.address} events do not match score`));
+  });
+  const frozen = buildSurpriseCandidateSet(config, candidates);
+  sameJson(drop.candidates, frozen.decisions.map((candidate) => ({
+    address: candidate.address,
+    points: candidate.points.toString(),
+    acceptedEvents: candidate.acceptedEvents,
+    minimumBalance: candidate.minimumBalance.toString(),
+    excluded: candidate.excluded,
+    activityQualified: candidate.activityQualified,
+    holdingQualified: candidate.holdingQualified,
+    activityWeight: candidate.activityWeight.toString(),
+    holdingUnits: candidate.holdingUnits.toString(),
+    selectionWeight: candidate.selectionWeight.toString(),
+    eligible: candidate.eligible,
+  })), at("candidates"));
+  sameHex(drop.candidateCommitment, frozen.candidateCommitment, at("candidateCommitment"));
+  assert(drop.eligibleCandidateCount === frozen.eligibleCount, at("eligibleCandidateCount does not reproduce"));
+  assert(decimal(drop.totalSelectionWeight, at("totalSelectionWeight")) === frozen.totalSelectionWeight, at("totalSelectionWeight does not reproduce"));
+  const seed = deriveSurpriseSeed({
+    candidateCommitment: frozen.candidateCommitment,
+    entropyChainId: decimal(drop.entropy.chainId, at("entropy.chainId")),
+    entropyBlockNumber: decimal(drop.entropy.blockNumber, at("entropy.blockNumber")),
+    entropyBlockHash: drop.entropy.blockHash,
+  });
+  sameHex(drop.entropy.seed, seed, at("entropy.seed"));
+  const selected = selectSurpriseDrop({ config, candidates, seed });
+  const commitment = buildDistributionCommitment(
+    drop.dropId,
+    selected.winners.map(({ address: recipient, amount }) => ({ address: recipient, amount })),
+  );
+  sameHex(drop.allocationRoot, commitment.allocationRoot, at("allocationRoot"));
+  sameHex(drop.batchesRoot, commitment.batchesRoot, at("batchesRoot"));
+  sameJson(drop.allocations, selected.winners.map((winner) => {
+    const entry = commitment.entries.find(({ address: recipient }) => recipient.toLowerCase() === winner.address.toLowerCase());
+    assert(entry, at(`missing winner proof for ${winner.address}`));
+    return {
+      address: winner.address, draw: winner.draw, points: winner.points.toString(),
+      acceptedEvents: winner.acceptedEvents, minimumBalance: winner.minimumBalance.toString(),
+      activityWeight: winner.activityWeight.toString(), holdingUnits: winner.holdingUnits.toString(),
+      selectionWeight: winner.selectionWeight.toString(), ticket: winner.ticket.toString(),
+      totalWeightAtDraw: winner.totalWeightAtDraw.toString(), randomWord: winner.randomWord,
+      rejectionCount: winner.rejectionCount, amount: winner.amount.toString(), leaf: entry.leaf, proof: entry.proof,
+    };
+  }), at("allocations"));
+  validateCommittedTransactions(drop, commitment, at);
+}
+
+function validateCommittedTransactions(drop, commitment, at) {
+  const asset = drop.rewardAsset;
+  assert(drop.expectedBatches === commitment.batches.length && drop.batches.length === commitment.batches.length, at("expectedBatches does not reproduce"));
+  for (const [index, expected] of commitment.batches.entries()) {
+    const calldata = encodeFunctionData({ abi: distributorAbi, functionName: "distributeBatch",
+      args: [drop.dropId, BigInt(index), expected.recipients, expected.amounts, expected.proof] });
+    sameJson(drop.batches[index], { index, recipients: expected.recipients, amounts: expected.amounts.map(String),
+      batchHash: expected.batchHash, leaf: expected.leaf, proof: expected.proof, operatorCalldata: calldata,
+      operatorTransaction: { to: asset.distributorAddress, value: "0", data: calldata } }, at(`batches[${index}]`));
+  }
+  const createCalldata = encodeFunctionData({ abi: distributorAbi, functionName: "createDrop",
+    args: [drop.dropId, commitment.allocationRoot, commitment.batchesRoot, commitment.totalAmount, commitment.batches.length] });
+  const finalizeCalldata = encodeFunctionData({ abi: distributorAbi, functionName: "finalizeDrop", args: [drop.dropId] });
+  assert(drop.safeCreateDropCalldata.toLowerCase() === createCalldata.toLowerCase(), at("safeCreateDropCalldata does not reproduce"));
+  assert(drop.safeFinalizeDropCalldata.toLowerCase() === finalizeCalldata.toLowerCase(), at("safeFinalizeDropCalldata does not reproduce"));
+  transaction(drop.safeCreateDropTransaction, at("safeCreateDropTransaction"), asset.distributorAddress, createCalldata);
+  transaction(drop.safeFinalizeDropTransaction, at("safeFinalizeDropTransaction"), asset.distributorAddress, finalizeCalldata);
+}
+
 function validateCombinedDrop(drop, file) {
   const at = (field) => `${file}: ${field}`;
   validateAgainstSchema(combinedDropSchemaValidator, drop, file);
@@ -942,6 +1520,9 @@ function validateCombinedDrop(drop, file) {
 }
 
 function validateAnyDrop(drop, file) {
+  if (drop?.schemaVersion === 7) return validateSurpriseDrop(drop, file);
+  if (drop?.schemaVersion === 6) return validateStrictDiamondDrop(drop, file);
+  if (drop?.schemaVersion === 5) return validateParticipationDrop(drop, file);
   if (drop?.schemaVersion === 4) return validateCombinedDrop(drop, file);
   return validateDrop(drop, file);
 }
@@ -1038,9 +1619,15 @@ for (const path of await jsonFiles("schemas")) {
 }
 dropSchemaValidator = ajv.getSchema(dropSchemaId);
 combinedDropSchemaValidator = ajv.getSchema(combinedDropSchemaId);
+participationDropSchemaValidator = ajv.getSchema(participationDropSchemaId);
+strictDiamondDropSchemaValidator = ajv.getSchema(strictDiamondDropSchemaId);
+surpriseDropSchemaValidator = ajv.getSchema(surpriseDropSchemaId);
 reconciliationSchemaValidator = ajv.getSchema(reconciliationSchemaId);
 assert(dropSchemaValidator, `Missing schema ${dropSchemaId}`);
 assert(combinedDropSchemaValidator, `Missing schema ${combinedDropSchemaId}`);
+assert(participationDropSchemaValidator, `Missing schema ${participationDropSchemaId}`);
+assert(strictDiamondDropSchemaValidator, `Missing schema ${strictDiamondDropSchemaId}`);
+assert(surpriseDropSchemaValidator, `Missing schema ${surpriseDropSchemaId}`);
 assert(reconciliationSchemaValidator, `Missing schema ${reconciliationSchemaId}`);
 const deploymentCount = await validateProtocolDeployments();
 publishedRules = await loadPublishedRules();

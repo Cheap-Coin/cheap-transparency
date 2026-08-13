@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cheapcoin.fun/schemas/surprise-drop-v7.schema.json",
+  "title": "CheapCoin weighted-random Surprise Drop artifact v7",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "program", "chainId", "dropId", "rewardAsset", "round", "rewardAmount",
+    "winnerCount", "selectionRules", "score",
+    "candidateCommitment", "eligibleCandidateCount", "totalSelectionWeight", "candidates",
+    "entropy", "allocationRoot", "batchesRoot", "expectedBatches", "safeCreateDropCalldata",
+    "safeFinalizeDropCalldata", "safeCreateDropTransaction", "safeFinalizeDropTransaction",
+    "allocations", "batches"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 7 },
+    "program": { "const": "cheap_surprise_drop" },
+    "chainId": { "const": 4663 },
+    "dropId": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "rewardAsset": { "$ref": "diamond-drop-v4.schema.json#/$defs/rewardAsset" },
+    "round": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "id", "sequence", "startBlock", "endBlock", "holdingRulesVersion", "holdingRulesPath",
+        "holdingRulesSha256", "rulesVersion", "rulesPath", "rulesSha256"
+      ],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "startBlock": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "endBlock": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "holdingRulesVersion": { "type": "string", "minLength": 1 },
+        "holdingRulesPath": { "type": "string", "pattern": "^rules/RULES-v[0-9A-Za-z._-]+\\.md$" },
+        "holdingRulesSha256": { "$ref": "diamond-drop-v4.schema.json#/$defs/sha256" },
+        "rulesVersion": { "type": "string", "minLength": 1 },
+        "rulesPath": { "type": "string", "pattern": "^rules/COMMUNITY-RULES-v[0-9A-Za-z._-]+\\.md$" },
+        "rulesSha256": { "$ref": "diamond-drop-v4.schema.json#/$defs/sha256" }
+      }
+    },
+    "rewardAmount": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+    "winnerCount": { "type": "integer", "minimum": 1 },
+    "selectionRules": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "minimumPoints", "minimumAcceptedEvents", "floorTokenAmount", "holdingUnit",
+        "maximumHoldingUnits", "maximumActivityPoints", "withoutReplacement", "guaranteed"
+      ],
+      "properties": {
+        "minimumPoints": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "minimumAcceptedEvents": { "type": "integer", "minimum": 1 },
+        "floorTokenAmount": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "holdingUnit": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "maximumHoldingUnits": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "maximumActivityPoints": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "withoutReplacement": { "const": true },
+        "guaranteed": { "const": false }
+      }
+    },
+    "score": { "$ref": "diamond-drop-v4.schema.json#/$defs/communityScore" },
+    "candidateCommitment": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "eligibleCandidateCount": { "type": "integer", "minimum": 2 },
+    "totalSelectionWeight": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+    "candidates": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/candidate" } },
+    "entropy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["chainId", "blockNumber", "blockHash", "seed"],
+      "properties": {
+        "chainId": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "blockNumber": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "blockHash": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+        "seed": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" }
+      }
+    },
+    "allocationRoot": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "batchesRoot": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "expectedBatches": { "type": "integer", "minimum": 1 },
+    "safeCreateDropCalldata": { "$ref": "diamond-drop-v4.schema.json#/$defs/hexData" },
+    "safeFinalizeDropCalldata": { "$ref": "diamond-drop-v4.schema.json#/$defs/hexData" },
+    "safeCreateDropTransaction": { "$ref": "diamond-drop-v4.schema.json#/$defs/transaction" },
+    "safeFinalizeDropTransaction": { "$ref": "diamond-drop-v4.schema.json#/$defs/transaction" },
+    "allocations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/winner" } },
+    "batches": { "type": "array", "minItems": 1, "items": { "$ref": "diamond-drop-v4.schema.json#/$defs/batch" } }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "address", "points", "acceptedEvents", "minimumBalance", "excluded", "activityQualified",
+        "holdingQualified", "activityWeight", "holdingUnits", "selectionWeight", "eligible"
+      ],
+      "properties": {
+        "address": { "$ref": "diamond-drop-v4.schema.json#/$defs/address" },
+        "points": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "acceptedEvents": { "type": "integer", "minimum": 0 },
+        "minimumBalance": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "excluded": { "type": "boolean" },
+        "activityQualified": { "type": "boolean" },
+        "holdingQualified": { "type": "boolean" },
+        "activityWeight": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "holdingUnits": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "selectionWeight": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "eligible": { "type": "boolean" }
+      }
+    },
+    "winner": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "address", "draw", "points", "acceptedEvents", "minimumBalance", "activityWeight",
+        "holdingUnits", "selectionWeight", "ticket", "totalWeightAtDraw", "randomWord",
+        "rejectionCount", "amount", "leaf", "proof"
+      ],
+      "properties": {
+        "address": { "$ref": "diamond-drop-v4.schema.json#/$defs/address" },
+        "draw": { "type": "integer", "minimum": 0 },
+        "points": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "acceptedEvents": { "type": "integer", "minimum": 1 },
+        "minimumBalance": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "activityWeight": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "holdingUnits": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "selectionWeight": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "ticket": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "totalWeightAtDraw": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "randomWord": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+        "rejectionCount": { "type": "integer", "minimum": 0 },
+        "amount": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "leaf": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+        "proof": { "type": "array", "items": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" } }
+      }
+    }
+  }
+}

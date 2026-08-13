@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cheapcoin.fun/schemas/diamond-drop-v5.schema.json",
+  "title": "CheapCoin hold-and-participate Diamond Drop artifact v5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "chainId", "dropId", "rewardAsset", "assetContextHash",
+    "window", "rewardAmount", "holderPool", "participationGate",
+    "recipientCount", "allocationRoot", "batchesRoot", "expectedBatches",
+    "safeCreateDropCalldata", "safeFinalizeDropCalldata",
+    "safeCreateDropTransaction", "safeFinalizeDropTransaction", "allocations", "batches"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 5 },
+    "chainId": { "const": 4663 },
+    "dropId": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "rewardAsset": { "$ref": "diamond-drop-v4.schema.json#/$defs/rewardAsset" },
+    "assetContextHash": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "window": { "$ref": "diamond-drop-v4.schema.json#/$defs/holderWindow" },
+    "rewardAmount": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+    "holderPool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "floorTokenAmount", "eligibleCount", "totalWeight", "snapshotHash", "snapshot"
+      ],
+      "properties": {
+        "floorTokenAmount": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "eligibleCount": { "type": "integer", "minimum": 1 },
+        "totalWeight": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "snapshotHash": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+        "snapshot": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "diamond-drop-v4.schema.json#/$defs/holderSnapshotEntry" }
+        }
+      }
+    },
+    "participationGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumPoints", "minimumAcceptedEvents", "score",
+        "participationQualifiedCount", "gateHash", "decisions"
+      ],
+      "properties": {
+        "minimumPoints": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "minimumAcceptedEvents": { "type": "integer", "minimum": 1 },
+        "score": { "$ref": "diamond-drop-v4.schema.json#/$defs/communityScore" },
+        "participationQualifiedCount": { "type": "integer", "minimum": 1 },
+        "gateHash": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+        "decisions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/gateDecision" }
+        }
+      }
+    },
+    "recipientCount": { "type": "integer", "minimum": 1 },
+    "allocationRoot": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "batchesRoot": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+    "expectedBatches": { "type": "integer", "minimum": 1 },
+    "safeCreateDropCalldata": { "$ref": "diamond-drop-v4.schema.json#/$defs/hexData" },
+    "safeFinalizeDropCalldata": { "$ref": "diamond-drop-v4.schema.json#/$defs/hexData" },
+    "safeCreateDropTransaction": { "$ref": "diamond-drop-v4.schema.json#/$defs/transaction" },
+    "safeFinalizeDropTransaction": { "$ref": "diamond-drop-v4.schema.json#/$defs/transaction" },
+    "allocations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/allocation" }
+    },
+    "batches": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "diamond-drop-v4.schema.json#/$defs/batch" }
+    }
+  },
+  "$defs": {
+    "gateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address", "points", "acceptedEvents", "holderExcluded",
+        "pointsQualified", "eventsQualified", "participationQualified"
+      ],
+      "properties": {
+        "address": { "$ref": "diamond-drop-v4.schema.json#/$defs/address" },
+        "points": { "$ref": "diamond-drop-v4.schema.json#/$defs/decimal" },
+        "acceptedEvents": { "type": "integer", "minimum": 0 },
+        "holderExcluded": { "type": "boolean" },
+        "pointsQualified": { "type": "boolean" },
+        "eventsQualified": { "type": "boolean" },
+        "participationQualified": { "type": "boolean" }
+      }
+    },
+    "allocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address", "minimumBalance", "streak", "multiplierBps", "weight",
+        "participationPoints", "acceptedEvents", "amount", "leaf", "proof"
+      ],
+      "properties": {
+        "address": { "$ref": "diamond-drop-v4.schema.json#/$defs/address" },
+        "minimumBalance": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "streak": { "type": "integer", "minimum": 1 },
+        "multiplierBps": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "weight": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "participationPoints": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "acceptedEvents": { "type": "integer", "minimum": 1 },
+        "amount": { "$ref": "diamond-drop-v4.schema.json#/$defs/positiveDecimal" },
+        "leaf": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" },
+        "proof": {
+          "type": "array",
+          "items": { "$ref": "diamond-drop-v4.schema.json#/$defs/bytes32" }
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
-# CheapCoin transparency ledger
+# CheapCoin Rewards Ledger
 
-This public, MIT-licensed repository is the append-only evidence ledger for
-CheapCoin. It publishes Diamond Drop artifacts, Safe transaction references,
+Public, MIT-licensed, append-only evidence for CheapCoin reward distributions.
+This repository publishes Diamond Drop artifacts, Safe transaction references,
 post-execution reconciliations, rules hashes, verified notices, and incident
 records without exposing production service credentials.
 
@@ -9,16 +9,19 @@ This repository does not create entitlement by itself. The canonical onchain
 distributor state and verified Robinhood Chain transactions control execution;
 the files here let anyone reproduce and audit what was proposed and completed.
 The validator pins the public protocol implementation as a Git submodule and
-recomputes holder eligibility, weights, allocations, Merkle roots and proofs,
-batch contents, and Safe/operator calldata from every published snapshot. V4
-also reproduces approved community-event scoring, caps, exclusions, funding
-splits, source allocations, and the final merged recipient set. It also compiles
+recomputes eligibility, weights, randomness, allocations, Merkle roots and proofs,
+batch contents, and Safe/operator calldata from every published snapshot. V6 is
+the strict holder-only COST Diamond format, including the outbound-transfer flags
+and reproducible hidden-window selection. V7 is the separate weighted-random
+CHEAP Surprise format, including privacy-preserving event commitments, the fully
+reproducible score and candidate set, and future-block entropy. V3/V4/V5 remain
+historical formats. The validator also compiles
 the deployment schema directly from that exact protocol commit, rejects
 non-canonical deployment files, independently hashes their exact UTF-8 bytes,
 requires one active deployment at most, and verifies that every superseded
 record resolves to the active replacement.
 
-## Publication flow
+## Publication workflow
 
 1. Build an artifact from finalized CHEAP chain data using the pinned public
    protocol implementation.

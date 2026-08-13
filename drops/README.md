@@ -8,7 +8,9 @@ The artifact also names the exact published rules path and SHA-256 digest used
 for that window. A rules label without the matching byte digest is invalid.
 Preview data, unsigned proposals, and secrets do not belong here.
 
-Use v3 for a holder-only distribution. Use v4 only when an independently
-reviewed community pool is included. A v4 artifact must publish approved event
-commitments and deterministic outcomes, never X usernames, post text, OAuth
+V3, V4, and V5 are retained legacy formats. New COST Diamond distributions use
+V6 and publish every outbound-transfer flag plus the future entropy that selected
+the hidden end block. New CHEAP Surprise distributions use V7 and publish score
+commitments, the complete candidate set, capped weights, future entropy, selected
+winners, and exact allocations—never X/TikTok usernames, content text, OAuth
 tokens, raw event IDs, raw signatures, or rejected identity associations.
