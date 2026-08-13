@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 7,
+  "program": "cheap_surprise_drop",
+  "chainId": 4663,
+  "dropId": "0x7777777777777777777777777777777777777777777777777777777777777777",
+  "rewardAsset": {
+    "tokenAddress": "0x0000000000000000000000000000000000000064",
+    "distributorAddress": "0x00000000000000000000000000000000000000C8",
+    "symbol": "CHEAP",
+    "name": "CheapCoin",
+    "decimals": 18
+  },
+  "round": {
+    "id": "00000000-0000-4000-8000-000000000007",
+    "sequence": 1,
+    "startBlock": "100",
+    "endBlock": "200",
+    "holdingRulesVersion": "1.0.0",
+    "holdingRulesPath": "rules/RULES-v1.md",
+    "holdingRulesSha256": "b80cc1e93fac35292aa1bce7beb537e4cd5f181260d3f35d01889a4dfbc797b9",
+    "rulesVersion": "1.0.0-test-vector",
+    "rulesPath": "rules/COMMUNITY-RULES-v1-test-vector.md",
+    "rulesSha256": "1aba704e605b997de11a29d4c8d5c8b5ce0ae75f5f87a88605c93f6d24a317e6"
+  },
+  "rewardAmount": "1000000000000000000000",
+  "winnerCount": 2,
+  "selectionRules": {
+    "minimumPoints": "5",
+    "minimumAcceptedEvents": 1,
+    "floorTokenAmount": "100000000000000000000",
+    "holdingUnit": "100000000000000000000",
+    "maximumHoldingUnits": "10",
+    "maximumActivityPoints": "20",
+    "withoutReplacement": true,
+    "guaranteed": false
+  },
+  "score": {
+    "schemaVersion": 1,
+    "round": {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "sequence": 1,
+      "startTime": 1800000000,
+      "endTime": 1800086400,
+      "rulesVersion": "1.0.0-test-vector",
+      "rulesPath": "rules/COMMUNITY-RULES-v1-test-vector.md",
+      "rulesSha256": "1aba704e605b997de11a29d4c8d5c8b5ce0ae75f5f87a88605c93f6d24a317e6"
+    },
+    "rules": [
+      {
+        "action": "x_original_post",
+        "points": "5",
+        "perUtcDay": 4,
+        "perRound": 4
+      }
+    ],
+    "approvedEvents": [
+      {
+        "eventCommitment": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "address": "0x0000000000000000000000000000000000000001",
+        "action": "x_original_post",
+        "occurredAt": 1800000100
+      },
+      {
+        "eventCommitment": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "address": "0x0000000000000000000000000000000000000002",
+        "action": "x_original_post",
+        "occurredAt": 1800000200
+      },
+      {
+        "eventCommitment": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "address": "0x0000000000000000000000000000000000000002",
+        "action": "x_original_post",
+        "occurredAt": 1800000300
+      },
+      {
+        "eventCommitment": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000400
+      },
+      {
+        "eventCommitment": "0x5555555555555555555555555555555555555555555555555555555555555555",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000500
+      },
+      {
+        "eventCommitment": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000600
+      },
+      {
+        "eventCommitment": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000700
+      },
+      {
+        "eventCommitment": "0x8888888888888888888888888888888888888888888888888888888888888888",
+        "address": "0x0000000000000000000000000000000000000004",
+        "action": "x_original_post",
+        "occurredAt": 1800000800
+      }
+    ],
+    "excludedAddresses": [],
+    "contributors": [
+      {
+        "address": "0x0000000000000000000000000000000000000001",
+        "points": "5",
+        "acceptedEvents": 1
+      },
+      {
+        "address": "0x0000000000000000000000000000000000000002",
+        "points": "10",
+        "acceptedEvents": 2
+      },
+      {
+        "address": "0x0000000000000000000000000000000000000003",
+        "points": "20",
+        "acceptedEvents": 4
+      },
+      {
+        "address": "0x0000000000000000000000000000000000000004",
+        "points": "5",
+        "acceptedEvents": 1
+      }
+    ],
+    "acceptedEvents": [
+      {
+        "eventCommitment": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "address": "0x0000000000000000000000000000000000000001",
+        "action": "x_original_post",
+        "occurredAt": 1800000100,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x2222222222222222222222222222222222222222222222222222222222222222",
+        "address": "0x0000000000000000000000000000000000000002",
+        "action": "x_original_post",
+        "occurredAt": 1800000200,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x3333333333333333333333333333333333333333333333333333333333333333",
+        "address": "0x0000000000000000000000000000000000000002",
+        "action": "x_original_post",
+        "occurredAt": 1800000300,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000400,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x5555555555555555555555555555555555555555555555555555555555555555",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000500,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000600,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "address": "0x0000000000000000000000000000000000000003",
+        "action": "x_original_post",
+        "occurredAt": 1800000700,
+        "points": "5"
+      },
+      {
+        "eventCommitment": "0x8888888888888888888888888888888888888888888888888888888888888888",
+        "address": "0x0000000000000000000000000000000000000004",
+        "action": "x_original_post",
+        "occurredAt": 1800000800,
+        "points": "5"
+      }
+    ],
+    "rejectedEvents": [],
+    "totalPoints": "40",
+    "inputCommitment": "0xd723f0f82d055fa34bfc6ea131c80a94b39b6205963ef1ae99268f96ec55028c",
+    "outputCommitment": "0xe70e55e24cfcea283f1f1c2b618fef922bff339b94bbddeb7e12f231ba49ebde"
+  },
+  "candidateCommitment": "0x93b527091731a5bbe5c35ebb4ab427b357fd75ed5a2a2966e01491d27ea74b92",
+  "eligibleCandidateCount": 3,
+  "totalSelectionWeight": "225",
+  "candidates": [
+    {
+      "address": "0x0000000000000000000000000000000000000001",
+      "points": "5",
+      "acceptedEvents": 1,
+      "minimumBalance": "100000000000000000000",
+      "excluded": false,
+      "activityQualified": true,
+      "holdingQualified": true,
+      "activityWeight": "5",
+      "holdingUnits": "1",
+      "selectionWeight": "5",
+      "eligible": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000002",
+      "points": "10",
+      "acceptedEvents": 2,
+      "minimumBalance": "200000000000000000000",
+      "excluded": false,
+      "activityQualified": true,
+      "holdingQualified": true,
+      "activityWeight": "10",
+      "holdingUnits": "2",
+      "selectionWeight": "20",
+      "eligible": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000003",
+      "points": "20",
+      "acceptedEvents": 4,
+      "minimumBalance": "1000000000000000000000",
+      "excluded": false,
+      "activityQualified": true,
+      "holdingQualified": true,
+      "activityWeight": "20",
+      "holdingUnits": "10",
+      "selectionWeight": "200",
+      "eligible": true
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000004",
+      "points": "5",
+      "acceptedEvents": 1,
+      "minimumBalance": "50000000000000000000",
+      "excluded": false,
+      "activityQualified": true,
+      "holdingQualified": false,
+      "activityWeight": "5",
+      "holdingUnits": "0",
+      "selectionWeight": "0",
+      "eligible": false
+    }
+  ],
+  "entropy": {
+    "chainId": "4663",
+    "blockNumber": "300",
+    "blockHash": "0x6666666666666666666666666666666666666666666666666666666666666666",
+    "seed": "0x58b35fad52a4b10e2ade705a1336ad459b80feee084119cce2f019f41e1b5830"
+  },
+  "allocationRoot": "0xf4f9979ad1032b493b324dda096431bc2da38def62f094bc6453b88be2ba8d9b",
+  "batchesRoot": "0x4445ac04debea5ee4c0795c504978d4b71ddd43a9be1122ebb37a68c03ab06d4",
+  "expectedBatches": 1,
+  "safeCreateDropCalldata": "0x183ec1467777777777777777777777777777777777777777777777777777777777777777f4f9979ad1032b493b324dda096431bc2da38def62f094bc6453b88be2ba8d9b4445ac04debea5ee4c0795c504978d4b71ddd43a9be1122ebb37a68c03ab06d400000000000000000000000000000000000000000000003635c9adc5dea000000000000000000000000000000000000000000000000000000000000000000001",
+  "safeFinalizeDropCalldata": "0xd1ffe5907777777777777777777777777777777777777777777777777777777777777777",
+  "safeCreateDropTransaction": {
+    "to": "0x00000000000000000000000000000000000000C8",
+    "value": "0",
+    "data": "0x183ec1467777777777777777777777777777777777777777777777777777777777777777f4f9979ad1032b493b324dda096431bc2da38def62f094bc6453b88be2ba8d9b4445ac04debea5ee4c0795c504978d4b71ddd43a9be1122ebb37a68c03ab06d400000000000000000000000000000000000000000000003635c9adc5dea000000000000000000000000000000000000000000000000000000000000000000001"
+  },
+  "safeFinalizeDropTransaction": {
+    "to": "0x00000000000000000000000000000000000000C8",
+    "value": "0",
+    "data": "0xd1ffe5907777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "allocations": [
+    {
+      "address": "0x0000000000000000000000000000000000000003",
+      "draw": 0,
+      "points": "20",
+      "acceptedEvents": 4,
+      "minimumBalance": "1000000000000000000000",
+      "activityWeight": "20",
+      "holdingUnits": "10",
+      "selectionWeight": "200",
+      "ticket": "147",
+      "totalWeightAtDraw": "225",
+      "randomWord": "0xe92189bf0ae956d43208281ed1fb68b67551a03e5efdb0764452e0c742d2f995",
+      "rejectionCount": 0,
+      "amount": "909090909090909090908",
+      "leaf": "0x08dfd8dbed6e7c0233ee95c79f4a5621cdda0a7dcb2a4e61ad20b79d50b81c7a",
+      "proof": [
+        "0x88874f294d59e7934cd5e2c4bf6cfb5780a96aad50a3152bc1ab37edba6188dd"
+      ]
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000002",
+      "draw": 1,
+      "points": "10",
+      "acceptedEvents": 2,
+      "minimumBalance": "200000000000000000000",
+      "activityWeight": "10",
+      "holdingUnits": "2",
+      "selectionWeight": "20",
+      "ticket": "11",
+      "totalWeightAtDraw": "25",
+      "randomWord": "0xc8bf5ff93bc27de5468d80c6261e40f30e5d3250fe51c464f1629c22fc545563",
+      "rejectionCount": 0,
+      "amount": "90909090909090909092",
+      "leaf": "0x88874f294d59e7934cd5e2c4bf6cfb5780a96aad50a3152bc1ab37edba6188dd",
+      "proof": [
+        "0x08dfd8dbed6e7c0233ee95c79f4a5621cdda0a7dcb2a4e61ad20b79d50b81c7a"
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "index": 0,
+      "recipients": [
+        "0x0000000000000000000000000000000000000002",
+        "0x0000000000000000000000000000000000000003"
+      ],
+      "amounts": [
+        "90909090909090909092",
+        "909090909090909090908"
+      ],
+      "batchHash": "0xd9300d22e7467bf0cf0be33809922cc45c76f581c0e9271808cb22391fb62a0e",
+      "leaf": "0x4445ac04debea5ee4c0795c504978d4b71ddd43a9be1122ebb37a68c03ab06d4",
+      "proof": [],
+      "operatorCalldata": "0x01baf7277777777777777777777777777777777777777777777777777777777777777777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000004ed9df8865a0e8ba4000000000000000000000000000000000000000000000031482bb53f8491745c0000000000000000000000000000000000000000000000000000000000000000",
+      "operatorTransaction": {
+        "to": "0x00000000000000000000000000000000000000C8",
+        "value": "0",
+        "data": "0x01baf7277777777777777777777777777777777777777777777777777777777777777777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000004ed9df8865a0e8ba4000000000000000000000000000000000000000000000031482bb53f8491745c0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  ]
+}

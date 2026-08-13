@@ -11,7 +11,14 @@ It commits the reviewed community inputs, deterministic score, budget split,
 source allocations, merged recipients, proofs, batches, and Safe calldata. V3
 remains valid for holder-only distributions and is never rewritten as V4.
 
+V5 is retained only as a historical hold-and-participate fixture. V6 is the
+current COST Diamond format: holder-only, strict no-outbound-transfer eligibility,
+and a hidden end selected from published bounds by future finalized-block entropy.
+V7 is the separate CHEAP Surprise format: approved activity plus CHEAP holdings
+create capped selection weights, fewer winners than eligible candidates are drawn
+without replacement, and every input and random result is reproducible.
+
 The production deployment-manifest schema remains single-sourced in the pinned
-`vendor/cheap-protocol/deployments/` directory. Transparency validation compiles
+`vendor/cheap-protocol/deployments/` directory. Ledger validation compiles
 that exact schema and checks every pinned canonical manifest; it is deliberately
 not copied here, which prevents the ledger and protocol from silently drifting.
